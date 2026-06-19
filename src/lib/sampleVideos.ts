@@ -1,0 +1,40 @@
+export const sampleVideos = [
+  {
+    _id: "sample-web-dev",
+    videotitle: "Learn Web Development in 2024",
+    filename: "web-dev-2024.mp4",
+    filepath: "/video/vdo.mp4",
+    filetype: "video/mp4",
+    filesize: "45000000",
+    videochanel: "Tech Academy",
+    Like: 256,
+    views: 5420,
+    uploader: "tech_academy_01",
+  },
+  {
+    _id: "sample-react-hooks",
+    videotitle: "React Hooks Explained - Complete Guide",
+    filename: "react-hooks.mp4",
+    filepath: "/video/vdo.mp4",
+    filetype: "video/mp4",
+    filesize: "38000000",
+    videochanel: "Code Masters",
+    Like: 189,
+    views: 3210,
+    uploader: "code_masters_02",
+  },
+  {
+    _id: "sample-nextjs",
+    videotitle: "Next.js Full Stack Development",
+    filename: "nextjs-fullstack.mp4",
+    filepath: "/video/vdo.mp4",
+    filetype: "video/mp4",
+    filesize: "55000000",
+    videochanel: "Modern Dev",
+    Like: 891,
+    views: 18900,
+    uploader: "modern_dev_06",
+  },
+];
+
+export default sampleVideos;
