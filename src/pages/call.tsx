@@ -322,31 +322,3 @@ function RemoteVideoTile({ peer }: { peer: any }) {
     </div>
   );
 }
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    if (videoRef.current && peer.stream) {
-      videoRef.current.srcObject = peer.stream;
-    }
-  }, [peer.stream]);
-
-  return (
-    <div className="bg-black rounded-lg overflow-hidden border border-gray-700">
-      {peer.stream ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full h-72 object-cover"
-        />
-      ) : (
-        <div className="w-full h-72 flex items-center justify-center bg-gray-900 text-gray-400">
-          Waiting for video…
-        </div>
-      )}
-      <div className="p-3 text-sm text-gray-300 border-t border-gray-800">
-        {peer.username || 'Participant'}
-      </div>
-    </div>
-  );
-}
