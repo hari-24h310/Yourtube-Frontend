@@ -82,7 +82,7 @@ export default function Friends() {
       setFriendEmail('');
     } catch (error) {
       console.error('Error sending request:', error);
-      if (error.response?.status === 400) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
         alert('Friend request already exists or you are already friends');
       } else {
         alert('Failed to send friend request');
