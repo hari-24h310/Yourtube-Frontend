@@ -3,7 +3,7 @@ import Sidebar from "@/components/Sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import "@/styles/globals.css";
 import "../frontend/styles/theme.css";
-import useTheme from "../frontend/hooks/useTheme";
+import { useTheme } from "../frontend/hooks/useTheme";
 import type { AppProps } from "next/app";
 import { UserProvider } from "../lib/AuthContext";
 import { ThemeProvider } from "../lib/ThemeContext";
