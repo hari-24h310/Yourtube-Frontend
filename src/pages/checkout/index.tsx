@@ -29,16 +29,37 @@ export default function CheckoutPage() {
   const userEmail = searchParams.get("email");
 
   useEffect(() => {
-    // Load Razorpay script
+    // Already loaded check
+    if (window.Razorpay) {
+      setScriptReady(true);
+      return;
+    }
+
+    const existing = document.querySelector(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+    );
+    if (existing) {
+      existing.addEventListener("load", () => setScriptReady(true));
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
-    script.onload = () => setScriptReady(true);
-    script.onerror = () => setError("Failed to load Razorpay checkout script");
+    script.onload = () => {
+      console.log("✅ Razorpay script loaded");
+      setScriptReady(true);
+    };
+    script.onerror = () => {
+      console.error("❌ Razorpay script failed to load");
+      setError("Failed to load payment gateway. Check your internet connection.");
+    };
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
@@ -72,8 +93,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!scriptReady && !(window as any).Razorpay) {
-      setError("Razorpay is still loading. Please wait a moment and try again.");
+    if (!window.Razorpay) {
+      setError("Payment gateway not loaded. Please refresh the page and try again.");
       return;
     }
 
@@ -81,7 +102,6 @@ export default function CheckoutPage() {
     setError("");
 
     try {
-      // Create payment order
       const orderRes = await axiosInstance.post("/payment/create-order", {
         userId: normalizedUserId,
         planType: plan,
@@ -103,7 +123,6 @@ export default function CheckoutPage() {
         });
 
         if (verifyRes.data.success) {
-          // Activate the plan in backend
           try {
             await axiosInstance.post("/plan/upgrade", {
               userId: normalizedUserId,
@@ -115,12 +134,6 @@ export default function CheckoutPage() {
             console.warn("Plan upgrade failed after mock verify:", e);
           }
 
-          if (verifyRes.data.invoiceEmailSent === false) {
-            setError(
-              verifyRes.data.invoiceEmailError ||
-                "Payment completed, but invoice email could not be sent. Please check server/.env SMTP settings."
-            );
-          }
           router.push(`/payment-success?plan=${plan}&amount=${planDetails.amount / 100}`);
           return;
         }
@@ -130,7 +143,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Initialize Razorpay
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag",
         amount: amount,
@@ -139,47 +151,38 @@ export default function CheckoutPage() {
         description: `${planDetails.name} Plan - ${planDetails.description}`,
         order_id: orderId,
         handler: async (response: any) => {
-            try {
-              // Verify payment
-              const verifyRes = await axiosInstance.post("/payment/verify", {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                userId: normalizedUserId,
-                planType: plan,
-                userEmail,
-              });
+          try {
+            const verifyRes = await axiosInstance.post("/payment/verify", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              userId: normalizedUserId,
+              planType: plan,
+              userEmail,
+            });
 
-              if (verifyRes.data.success) {
-                // Call plan upgrade to activate plan for the user
-                try {
-                  await axiosInstance.post("/plan/upgrade", {
-                    userId: normalizedUserId,
-                    planType: plan,
-                    paymentId: response.razorpay_payment_id,
-                    orderId: response.razorpay_order_id,
-                  });
-                } catch (upgradeErr) {
-                  console.warn("Plan upgrade failed after payment verify:", upgradeErr);
-                }
-
-                if (verifyRes.data.invoiceEmailSent === false) {
-                  setError(
-                    verifyRes.data.invoiceEmailError ||
-                      "Payment completed, but invoice email could not be sent. Please check server/.env SMTP settings."
-                  );
-                }
-                // Redirect to success page
-                router.push(
-                  `/payment-success?plan=${plan}&amount=${planDetails.amount / 100}`
-                );
+            if (verifyRes.data.success) {
+              try {
+                await axiosInstance.post("/plan/upgrade", {
+                  userId: normalizedUserId,
+                  planType: plan,
+                  paymentId: response.razorpay_payment_id,
+                  orderId: response.razorpay_order_id,
+                });
+              } catch (upgradeErr) {
+                console.warn("Plan upgrade failed after payment verify:", upgradeErr);
               }
-            } catch (error: any) {
-              setError(
-                error.response?.data?.message || "Payment verification failed"
+
+              router.push(
+                `/payment-success?plan=${plan}&amount=${planDetails.amount / 100}`
               );
-              setLoading(false);
             }
+          } catch (error: any) {
+            setError(
+              error.response?.data?.message || "Payment verification failed"
+            );
+            setLoading(false);
+          }
         },
         prefill: {
           email: userEmail || "",
@@ -206,6 +209,12 @@ export default function CheckoutPage() {
     <div className="max-w-md mx-auto py-12">
       <div className="bg-white border rounded-lg p-8 shadow-lg">
         <h1 className="text-3xl font-bold mb-6">Order Summary</h1>
+
+        {!scriptReady && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 p-3 rounded mb-4 text-sm">
+            ⏳ Loading payment gateway...
+          </div>
+        )}
 
         <div className="space-y-4 mb-8 pb-8 border-b">
           <div className="flex justify-between">
@@ -241,7 +250,7 @@ export default function CheckoutPage() {
             <Button onClick={handlePayment} className="flex-1">
               Retry Payment
             </Button>
-            <Button variant="ghost" onClick={() => router.push('/plans')}>
+            <Button variant="ghost" onClick={() => router.push("/plans")}>
               Change Plan
             </Button>
           </div>
@@ -249,10 +258,14 @@ export default function CheckoutPage() {
 
         <Button
           onClick={handlePayment}
-          disabled={loading}
+          disabled={loading || !scriptReady}
           className="w-full py-6 text-lg"
         >
-          {loading ? "Processing..." : "Pay with Razorpay"}
+          {loading
+            ? "Processing..."
+            : !scriptReady
+            ? "Loading..."
+            : "Pay with Razorpay"}
         </Button>
 
         <p className="text-xs text-gray-500 text-center mt-4">

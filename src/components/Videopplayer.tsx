@@ -15,6 +15,7 @@ interface VideoPlayerProps {
   videoIndex?: number;
   totalVideos?: number;
   onNextVideo?: () => void;
+  onDownload?: () => void;
 }
 
 export default function VideoPlayer({ 
@@ -22,7 +23,8 @@ export default function VideoPlayer({
   onCommentOpen,
   videoIndex = 0,
   totalVideos = 1,
-  onNextVideo 
+  onNextVideo,
+  onDownload
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);

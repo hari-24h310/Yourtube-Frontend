@@ -75,6 +75,13 @@ const index = () => {
     return <div>Video not found</div>;
   }
 
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = selectedVideo.filepath;
+    link.download = selectedVideo.filename;
+    link.click();
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto p-4">
@@ -86,6 +93,7 @@ const index = () => {
               videoIndex={currentVideoIndex}
               totalVideos={allVideos.length}
               onNextVideo={handleNextVideo}
+              onDownload={handleDownload}
             />
             <VideoInfo video={selectedVideo} />
             <div ref={commentsRef}>

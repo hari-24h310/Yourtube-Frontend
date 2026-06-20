@@ -219,7 +219,7 @@ const Comment: React.FC<CommentProps> = ({
           </div>
         ) : (
           <>
-            <p className="text-sm mb-3">
+            <p className="text-sm mb-3 text-gray-900">
               {showTranslation && translatedText ? translatedText : comment.commentbody}
             </p>
 
@@ -230,7 +230,7 @@ const Comment: React.FC<CommentProps> = ({
                     availableLanguages.find((option) => option.code === selectedLanguage)?.label ?? selectedLanguage.toUpperCase()
                   }
                 </p>
-                <p className="text-sm">{translatedText}</p>
+                <p className="text-sm text-gray-900">{translatedText}</p>
               </div>
             )}
 

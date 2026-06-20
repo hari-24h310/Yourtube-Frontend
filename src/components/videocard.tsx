@@ -18,7 +18,7 @@ export default function VideoCard({ video }: any) {
   const watchId = video?._id || video?.filename || "";
 
   return (
-    <Link href={`/watch/${watchId}`} className="group">
+    <Link href={`/watch/${video._id}`} className="group">
       <div className="space-y-3">
         <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
           {/* Video Thumbnail Placeholder */}
