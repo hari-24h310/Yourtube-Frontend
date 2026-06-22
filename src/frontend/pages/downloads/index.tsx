@@ -31,18 +31,26 @@ export default function DownloadsPage() {
     }).catch(console.error).finally(() => setLoading(false));
   }, [userId]);
 
-  const handleDownload = async (videoId: string, videoUrl: string, title: string) => {
+ const handleDownload = async (videoId: string, videoUrl: string, title: string) => {
     try {
       const res = await axios.post("/download/video", { userId, videoId });
       if (res.data.videoUrl) {
-        // Trigger browser download
         const a = document.createElement("a");
         a.href = res.data.videoUrl;
         a.download = title || "video";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setDownloads((prev) => [res.data, ...prev]);
+
+        // ✅ Fix: build a safe object matching the expected shape
+        setDownloads((prev) => [{
+          _id: res.data.downloadId,
+          videoId: { _id: videoId, title: res.data.videoTitle },
+          videoTitle: res.data.videoTitle,
+          videoUrl: res.data.videoUrl,
+          downloadedAt: new Date().toISOString(),
+        }, ...prev]);
+
         setStatus((s: any) => s ? { ...s, downloadsToday: s.downloadsToday + 1 } : s);
       }
     } catch (err: any) {

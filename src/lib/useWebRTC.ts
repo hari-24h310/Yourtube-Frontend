@@ -37,7 +37,8 @@ export const useWebRTC = ({
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
-  const joinedRef = useRef(false);
+  const hasJoinedRoomRef = useRef(false);
+  const screenTrackRef = useRef<MediaStreamTrack | null>(null);
 
   const addOrUpdatePeer = useCallback((peer: PeerInfo) => {
     setPeers((prev) => {
@@ -103,7 +104,7 @@ export const useWebRTC = ({
   );
 
   const joinRoom = useCallback(async () => {
-    if (!roomId || !userId || !username || joinedRef.current) return;
+    if (!roomId || !userId || !username || hasJoinedRoomRef.current) return;
 
     const socket = io(serverUrl, {
       transports: ['websocket'],
@@ -116,9 +117,15 @@ export const useWebRTC = ({
 
     socket.on('connect', () => {
       console.log('Socket connected:', socket.id);
-      if (joinedRef.current && localStreamRef.current) {
+      if (localStreamRef.current && !hasJoinedRoomRef.current) {
         socket.emit('join-room', { roomId, userId, username });
+        hasJoinedRoomRef.current = true;
       }
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+      hasJoinedRoomRef.current = false;
     });
 
     socket.on('existing-participants', async (participants: PeerInfo[]) => {
@@ -186,8 +193,10 @@ export const useWebRTC = ({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       localStreamRef.current = stream;
       setLocalStream(stream);
-      joinedRef.current = true;
-      socket.emit('join-room', { roomId, userId, username });
+      if (!hasJoinedRoomRef.current) {
+        socket.emit('join-room', { roomId, userId, username });
+        hasJoinedRoomRef.current = true;
+      }
     } catch (error) {
       console.error('Unable to access camera or microphone:', error);
     }
@@ -204,16 +213,65 @@ export const useWebRTC = ({
       peerConnections.current.clear();
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
+      hasJoinedRoomRef.current = false;
+      screenTrackRef.current = null;
     };
   }, [joinRoom, roomId, userId, username]);
 
+  const restoreCameraStream = useCallback(async () => {
+    if (!localStreamRef.current) return;
+
+    try {
+      const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const cameraTrack = cameraStream.getVideoTracks()[0];
+      if (!cameraTrack) return;
+
+      peerConnections.current.forEach((pc) => {
+        const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
+        if (sender) {
+          sender.replaceTrack(cameraTrack);
+        }
+      });
+
+      localStreamRef.current.getVideoTracks().forEach((track) => {
+        if (track.kind === 'video') {
+          try {
+            localStreamRef.current?.removeTrack(track);
+            track.stop();
+          } catch {
+            // ignore
+          }
+        }
+      });
+
+      localStreamRef.current.addTrack(cameraTrack);
+      setLocalStream(localStreamRef.current);
+      setIsScreenSharing(false);
+      screenTrackRef.current = null;
+    } catch (error) {
+      console.error('Failed to restore camera after screen share:', error);
+    }
+  }, []);
+
   const toggleScreenShare = async () => {
     if (!localStreamRef.current) return;
-    try {
-      const screenStream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true });
-      const screenTrack = screenStream.getVideoTracks()[0];
 
+    if (isScreenSharing) {
+      if (screenTrackRef.current) {
+        screenTrackRef.current.stop();
+      } else {
+        await restoreCameraStream();
+      }
+      return;
+    }
+
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      const screenTrack = screenStream.getVideoTracks()[0];
       if (!screenTrack) return;
+
+      screenTrackRef.current = screenTrack;
+
       peerConnections.current.forEach((pc) => {
         const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
         if (sender) {
@@ -221,26 +279,17 @@ export const useWebRTC = ({
         }
       });
 
-      localStreamRef.current.getVideoTracks().forEach((track) => track.stop());
-      localStreamRef.current.removeTrack(localStreamRef.current.getVideoTracks()[0]);
+      const cameraTrack = localStreamRef.current.getVideoTracks()[0];
+      if (cameraTrack) {
+        localStreamRef.current.removeTrack(cameraTrack);
+        cameraTrack.stop();
+      }
       localStreamRef.current.addTrack(screenTrack);
       setLocalStream(localStreamRef.current);
       setIsScreenSharing(true);
 
       screenTrack.onended = async () => {
-        if (!localStreamRef.current) return;
-        const cameraStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-        const cameraTrack = cameraStream.getVideoTracks()[0];
-        peerConnections.current.forEach((pc) => {
-          const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
-          if (sender) {
-            sender.replaceTrack(cameraTrack);
-          }
-        });
-        localStreamRef.current.getVideoTracks().forEach((track) => track.stop());
-        localStreamRef.current = cameraStream;
-        setLocalStream(cameraStream);
-        setIsScreenSharing(false);
+        await restoreCameraStream();
       };
     } catch (error) {
       console.error('Screen share failed:', error);

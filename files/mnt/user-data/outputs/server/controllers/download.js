@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import DownloadLog from "../Modals/DownloadLog.js";
 import UserPlan from "../Modals/UserPlan.js";
 import Video from "../Modals/Video.js"; // adjust path if needed
@@ -8,6 +9,9 @@ export const downloadVideo = async (req, res) => {
     const { userId, videoId } = req.body;
     if (!userId || !videoId) {
       return res.status(400).json({ message: "userId and videoId are required." });
+    }
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      return res.status(404).json({ message: "Video not found." });
     }
 
     // 1. Get user's plan
