@@ -80,8 +80,8 @@ export default function VerifyOtp() {
       if (response.data.verified) {
         // Store user data
         const userData = {
-          id: response.data.user.id,
-          email: response.data.user.email,
+        _id: response.data.user._id || response.data.user.id,
+        id: response.data.user._id || response.data.user.id,
           phoneNumber: response.data.user.phoneNumber,
           displayName: response.data.user.displayName,
           theme: response.data.user.theme,

@@ -39,7 +39,7 @@ export default function PlansPage() {
 
   const fetchUserPlan = async () => {
     try {
-      const userId = user?._id || user?.id;
+      const userId = user?._id;
       if (!userId) return;
       const res = await axiosInstance.get(`/payment/user-plan/${userId}`);
       setUserPlan(res.data);
@@ -49,7 +49,7 @@ export default function PlansPage() {
   };
 
   const handleUpgrade = (planType: string) => {
-    const userId = user?._id || user?.id;
+    const userId = user?._id;
     if (!userId) {
       alert("Please sign in to upgrade");
       return;

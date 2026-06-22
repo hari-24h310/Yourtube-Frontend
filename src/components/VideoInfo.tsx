@@ -27,7 +27,7 @@ const VideoInfo = ({ video }: any) => {
 
   useEffect(() => {
     // Set current user ID (either authenticated or guest)
-    const userId = user?._id || user?.id;
+    const userId = user?._id;
     if (userId) {
       setCurrentUserId(userId);
     } else {
@@ -176,7 +176,7 @@ const VideoInfo = ({ video }: any) => {
 
     try {
       const res = await axiosInstance.post(`/download/video`, {
-        userId: user._id || user.id,
+        userId: user._id,
         videoId: video._id,
       });
 

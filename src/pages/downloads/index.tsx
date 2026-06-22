@@ -22,7 +22,7 @@ export default function DownloadsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const userId = user?._id || user?.id;
+    const userId = user?._id;
     if (!userId) return;
 
     const fetchDownloads = async () => {
@@ -48,7 +48,7 @@ export default function DownloadsPage() {
 
     try {
       await axiosInstance.delete(`/download/${downloadId}`, {
-        data: { userId: user?._id || user?.id },
+        data: { userId: user?._id },
       });
       setDownloads(downloads.filter((d) => d._id !== downloadId));
     } catch (err: any) {

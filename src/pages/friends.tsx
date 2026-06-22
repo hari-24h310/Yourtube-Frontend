@@ -29,13 +29,13 @@ export default function Friends() {
   }, [user]);
 
   const fetchData = async () => {
-    if (!user?.id) return;
+    if (!user?._id) return;
 
     try {
       const [friendsRes, requestsRes, historyRes] = await Promise.all([
-        axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/friend/list/${user.id}`),
-        axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/friend/pending/${user.id}`),
-        axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/friend/call-history/${user.id}`),
+        axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/friend/list/${user._id}`),
+        axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/friend/pending/${user._id}`),
+        axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/friend/call-history/${user._id}`),
       ]);
 
       setFriends(friendsRes.data.friends || []);
@@ -49,7 +49,7 @@ export default function Friends() {
   };
 
   const handleSendRequest = async () => {
-    if (!friendEmail.trim() || !user?.id) {
+    if (!friendEmail.trim() || !user?._id) {
       alert('Please enter a valid email');
       return;
     }
@@ -73,7 +73,7 @@ export default function Friends() {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/friend/send-request`,
         {
-          userId: user.id,
+          userId: user._id,
           friendId: foundUser._id,
         }
       );
@@ -311,8 +311,8 @@ export default function Friends() {
                         {call.status}
                       </p>
                       <p className="text-sm text-gray-400 mt-1">
-                        {call.callerId === user?.id ? 'Called' : 'Called by'}{' '}
-                        {call.callerId === user?.id
+                        {call.callerId === user?._id ? 'Called' : 'Called by'}{' '}
+                        {call.callerId === user?._id
                           ? call.receiverId?.displayName || call.receiverId?.name
                           : call.callerId?.displayName || call.callerId?.name}
                       </p>

@@ -28,8 +28,8 @@ export default function CallPage() {
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const roomId =
-    typeof friendId === 'string' && user?.id
-      ? [user.id, friendId].sort().join('-')
+    typeof friendId === 'string' && user?._id
+      ? [user._id, friendId].sort().join('-')
       : null;
 
   const {
@@ -47,7 +47,7 @@ export default function CallPage() {
     endCall,
   } = useWebRTC({
     roomId: roomId || '',
-    userId: user?.id || '',
+    userId: user?._id || '',
     username: user?.displayName || user?.name || 'You',
     serverUrl:
       process.env.NEXT_PUBLIC_SIGNALING_URL ||
@@ -78,7 +78,7 @@ export default function CallPage() {
   }, [localStream]);
 
   const handleStartCall = () => {
-    if (!roomId || !user?.id) {
+    if (!roomId || !user?._id) {
       setError('Unable to start the call. Please sign in and select a friend.');
       return;
     }
@@ -101,12 +101,12 @@ export default function CallPage() {
     setCallActive(false);
     setCallDuration(0);
 
-    if (user?.id && typeof friendId === 'string') {
+    if (user?._id && typeof friendId === 'string') {
       try {
         await axios.post(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/friend/call-history`,
           {
-            callerId: user.id,
+            callerId: user._id,
             receiverId: friendId,
             callType: isScreenSharing ? 'screen-share' : 'video',
             duration: callDuration,
